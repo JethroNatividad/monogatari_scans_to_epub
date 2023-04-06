@@ -1,5 +1,4 @@
-// https://www.monogatariscansmtl.com/post/martial-peak-{chapter-number}
-
+#!/usr/bin/env node
 import axios from 'axios'
 import {load} from 'cheerio'
 import Epub from 'epub-gen'
