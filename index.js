@@ -1,33 +1,39 @@
 #!/usr/bin/env node
 import axios from 'axios'
-import {load} from 'cheerio'
 import Epub from 'epub-gen'
+import inquirer from 'inquirer'
+import {load} from 'cheerio'
 
-const getChapter = async (chapterNumber) => {
-    const { data } = await axios.get(`https://www.monogatariscansmtl.com/post/martial-peak-${chapterNumber}`)
-    const $ = load(data)
-
-    // div > ._1hN1O.uyQefQ
-    const mainDiv = $('div > ._1hN1O.uyQefQ')
-
-    // get all spans
-    const spans = mainDiv.find('span')
-
-    const paragraphs = []
-
-    paragraphs.push(`<h1>Martial Peak - Chapter ${chapterNumber}</h1>`)
-
-    for(let i of spans) {
-        // if the child is a text node
-        if(i.children[0].type === 'text') {
-            paragraphs.push(`<p>${i.children[0].data}</p>`)
+const getChapter = async (selectedNovel, chapterNumber) => {
+    try {
+        const { data } = await axios.get(`https://www.monogatariscansmtl.com/post/${selectedNovel.id}-${chapterNumber}`)
+        const $ = load(data)
+    
+        // div > ._1hN1O.uyQefQ
+        const mainDiv = $('div > ._1hN1O.uyQefQ')
+    
+        // get all spans
+        const spans = mainDiv.find('span')
+    
+        const paragraphs = []
+    
+        paragraphs.push(`<h1>${selectedNovel.title} - Chapter ${chapterNumber}</h1>`)
+    
+        for(let i of spans) {
+            // if the child is a text node
+            if(i.children[0].type === 'text') {
+                paragraphs.push(`<p>${i.children[0].data}</p>`)
+            }
         }
+    
+        paragraphs.push(`<p>Source: <a href="https://www.monogatariscansmtl.com/post/${selectedNovel.id}-${chapterNumber}">monogatariscansmtl.com/post/${selectedNovel.id}-${chapterNumber}</a></p>`)
+    
+        // combine paragraphs into a string with new lines
+        return paragraphs.join('\n')
+    } catch (error) {
+        console.log(error)
+        throw new Error(`Error getting chapter ${chapterNumber}`)
     }
-
-    paragraphs.push(`<p>Source: <a href="https://www.monogatariscansmtl.com/post/martial-peak-${chapterNumber}">monogatariscansmtl.com/post/martial-peak-${chapterNumber}</a></p>`)
-
-    // combine paragraphs into a string with new lines
-    return paragraphs.join('\n')
 }
 
 const saveToEpub = ({title, author, publisher, content}) => {
@@ -49,9 +55,69 @@ const saveToEpub = ({title, author, publisher, content}) => {
 }
 
 const main = async () => {
-    const chapterNumber = 5000
-    const chapter = await getChapter(chapterNumber)
-    saveToEpub({title: `MartialPeak-${chapterNumber}`, author: 'MOMO', publisher: 'JET', content: chapter})
+    const novels = [{title: 'Martial Peak', id: 'martial-peak', author: 'MOMO'}]
+    // Ask user to select a novel
+    const {novel} = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'novel',
+            message: 'Select a novel',
+            choices: novels.map(n => n.title),
+        }
+    ])
+
+    // Ask user to select chapter range
+    const {chapterRange} = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'chapterRange',
+            message: 'Enter chapter range (e.g. 1-100)',
+            validate: (input) => {
+                // check if input is valid, e.g. 1-100, check input is number, check start is less than end
+                if(!input.match(/^[0-9]+-[0-9]+$/)) {
+                    return 'Invalid chapter range'
+                }
+                return true
+            }
+        }
+    ])
+
+    // show confirmation, ask user to confirm, "Selected novel: Martial Peak, Chapter range: 1-100, is this correct?"
+    const {confirm} = await inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'confirm',
+            message: `Selected novel: ${novel}, Chapter range: ${chapterRange}, is this correct?`,
+        }
+    ])
+    
+    if(!confirm) {
+        console.log('Exiting...')
+        return
+    }
+
+    // get chapters
+    const [start, end] = chapterRange.split('-').map(n => parseInt(n))
+
+    const selectedNovel = novels.find(n => n.title === novel)
+    for(let i = start; i <= end; i++) {
+        try {
+            console.log(`Getting chapter ${i}...`)
+            const chapter = await getChapter(selectedNovel, i)
+            console.log(`Saving chapter ${i}...`)
+            saveToEpub({
+                title: selectedNovel.title,
+                author: selectedNovel.author,
+                publisher: 'JET',
+                content: chapter
+            })
+            console.log(`Chapter ${i} saved!`) 
+        } catch (error) {
+            console.log(error)
+            console.log(`Error getting chapter ${i}`)
+            break;
+        }
+    }
 }
 
 main()
