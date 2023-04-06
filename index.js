@@ -36,8 +36,8 @@ const getChapter = async (selectedNovel, chapterNumber) => {
     }
 }
 
-const saveToEpub = ({title, author, publisher, content}) => {
-    const fileName = title.replace(',', '_').replace(/\W+/g, '')
+const saveToEpub = ({title, author, publisher, content, chapterNumber}) => {
+    const fileName = title.replace(',', '_').replace(/\W+/g, '') + chapterNumber
     const option = {
         title: title, // *Required, title of the book.
         author: author, // *Required, name of the author.
@@ -109,7 +109,8 @@ const main = async () => {
                 title: selectedNovel.title,
                 author: selectedNovel.author,
                 publisher: 'JET',
-                content: chapter
+                content: chapter,
+                chapterNumber: i
             })
             console.log(`Chapter ${i} saved!`) 
         } catch (error) {
