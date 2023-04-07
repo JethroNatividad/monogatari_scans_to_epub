@@ -2,9 +2,10 @@ import Epub from 'epub-gen'
 
 export const getChapterData = async ({chapterNumber, browser}) => {
     const page = await browser.newPage()
+    
     const url = `https://www.monogatariscansmtl.com/post/martial-peak-${chapterNumber}`
     await page.goto(url)
-    const mainDiv = await page.waitForSelector('div[data-id="rich-content-viewer"]')
+    const mainDiv = await page.waitForSelector('div[data-id="rich-content-viewer"]', {timeout: 5000})
     // data-hook="post-title"
     const titleElement = await page.waitForSelector('h1[data-hook="post-title"]')
     const title = await titleElement.evaluate(el => el.innerHTML)
