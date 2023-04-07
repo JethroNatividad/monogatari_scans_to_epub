@@ -15,6 +15,7 @@ import {getChapterData, saveToEpub} from './functions.js'
             type: 'input',
             name: 'chapterEnd',
             message: 'Enter chapter end',
+            default: 99999
         }
     ])
 
@@ -24,6 +25,7 @@ import {getChapterData, saveToEpub} from './functions.js'
             type: 'confirm',
             name: 'confirm',
             message: `Download chapter range: ${chapterStart}-${chapterEnd}, is this correct?`,
+            default: true
         }
     ])
     
@@ -48,7 +50,7 @@ import {getChapterData, saveToEpub} from './functions.js'
         } catch (error) {
             console.log(error)
             console.log(`Error getting chapter ${i}`)
-            break;
+            continue
         }
     }
     
